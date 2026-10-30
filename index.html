@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch the Smiling Critter - Càng Ngày Càng Nhanh!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        h1 {
+            margin: 5px 0;
+            font-size: 1.8rem;
+            color: #ffcc00;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+        #game-info {
+            display: flex;
+            gap: 20px;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #game-container {
+            width: 800px;
+            height: 500px;
+            background: rgba(15, 15, 26, 0.85);
+            border: 4px solid #e94560;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.3);
+        }
+        .critter {
+            width: 75px;
+            height: 75px;
+            position: absolute;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: transform 0.1s ease;
+            animation: floatAnim 1.5s infinite alternate ease-in-out;
+        }
+        .critter:active {
+            transform: scale(0.85);
+        }
+        .critter img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+        }
+        .critter span {
+            font-size: 10px;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 1px 5px;
+            border-radius: 4px;
+            margin-top: -5px;
+            white-space: nowrap;
+        }
+        @keyframes floatAnim {
+            0% { transform: translateY(0px) rotate(-3deg); }
+            100% { transform: translateY(-8px) rotate(3deg); }
+        }
+        /* Màn hình chờ / Kết thúc */
+        #screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        #screen-overlay h2 {
+            font-size: 2.5rem;
+            color: #e94560;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        #screen-overlay p {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: #ccc;
+            text-align: center;
+            max-width: 80%;
+        }
+        .btn {
+            background-color: #e94560;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn:hover {
+            background-color: #ff6b81;
+            transform: scale(1.05);
+        }
+        .speed-up-alert {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ff4757;
+            text-shadow: 0 0 10px rgba(255, 71, 87, 0.8);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>CATCH THE SMILING CRITTER</h1>
+    <div id="game-info">
+        <div>Điểm: <span id="score">0</span></div>
+        <div>Mạng: <span id="lives">❤️❤️❤️</span></div>
+        <div>Tốc độ: <span id="speed-level">1x</span></div>
+    </div>
+
+    <div id="game-container">
+        <div id="speed-alert" class="speed-up-alert">⚡ TỐC ĐỘ TĂNG! ⚡</div>
+        
+        <div id="screen-overlay">
+            <h2 id="overlay-title">SMILING CRITTERS</h2>
+            <p id="overlay-desc">Bấm vào các thành viên Smiling Critters trước khi chúng biến mất! Càng ghi nhiều điểm, tốc độ xuất hiện và biến mất sẽ <strong>càng nhanh dần</strong>!</p>
+            <button class="btn" id="start-btn" onclick="startGame()">BẮT ĐẦU CHƠI</button>
+        </div>
+    </div>
+
+    <script>
+        // Danh sách nhân vật Smiling Critters kèm màu sắc chủ đạo và icon dễ thương (Emoji/Avatar tượng trưng)
+        const crittersData = [
+            { name: "CatNap", color: "#6c5ce7", emoji: "🐱" },
+            { name: "DogDay", color: "#e17055", emoji: "🐶" },
+            { name: "Bobby Bearhug", color: "#fd79a8", emoji: "🐻" },
+            { name: "CraftyCorn", color: "#a29bfe", emoji: "🦄" },
+            { name: "KickinChicken", color: "#ffeaa7", emoji: "🐥" },
+            { name: "Hoppy Hopscotch", color: "#00b894", emoji: "🐰" },
+            { name: "Bubba Bubbaphant", color: "#0984e3", emoji: "🐘" },
+            { name: "Picky Piggy", color: "#ff7675", emoji: "🐷" }
+        ];
+
+        let score = 0;
+        let lives = 3;
+        let gameInterval = null;
+        let spawnRate = 1200; // Thời gian khởi điểm giữa các lần xuất hiện (ms)
+        let lifetime = 2000;   // Thời gian tồn tại của mỗi nhân vật trên màn hình (ms)
+        let isPlaying = false;
+
+        const gameContainer = document.getElementById('game-container');
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const speedLevelDisplay = document.getElementById('speed-level');
+        const overlay = document.getElementById('screen-overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
+        const startBtn = document.getElementById('start-btn');
+        const speedAlert = document.getElementById('speed-alert');
+
+        // --- HỆ THỐNG ÂM THANH SINH ĐỘNG (Web Audio API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'pop') { // Âm thanh khi bắt trúng
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'miss') { // Âm thanh khi để tuột mất (trừ mạng)
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.linearRampToValueAtTime(80, now + 0.3);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'speedup') { // Âm thanh thông báo tăng tốc
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.setValueAtTime(500, now + 0.1);
+                osc.frequency.setValueAtTime(700, now + 0.2);
+                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        }
+
+        function startGame() {
+            // Reset trạng thái game
+            gameContainer.innerHTML = '<div id="speed-alert" class="speed-up-alert">⚡ TỐC ĐỘ TĂNG! ⚡</div>';
+            score = 0;
+            lives = 3;
+            spawnRate = 1200;
+            lifetime = 2000;
+            isPlaying = true;
+            
+            updateUI();
+            overlay.style.display = 'none';
+            
+            // Bắt đầu vòng lặp tạo nhân vật
+            scheduleNextSpawn();
+        }
+
+        function scheduleNextSpawn() {
+            if (!isPlaying) return;
+
+            spawnCritter();
+
+            // Càng nhiều điểm -> Tốc độ sinh ra càng nhanh (nhỏ dần spawnRate)
+            let currentSpawnDelay = Math.max(400, spawnRate - (score * 15));
+            gameInterval =
